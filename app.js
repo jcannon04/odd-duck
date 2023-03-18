@@ -8,6 +8,7 @@ let summary = document.querySelector('main section:last-of-type');
 let summaryHeader = document.querySelector('main section h2');
 let showResultsBtn = document.querySelector('button');
 let canvasSection = document.querySelector('main section:nth-child(2)');
+let canvasContainer = document.querySelector('main section:nth-of-type(2) div');
 
 let votes = 0;
 
@@ -135,12 +136,14 @@ function showResults() {
   canvasSection.style.gridRow = '2 / 3';
 
   aside.classList.add('results');
+  canvasContainer.classList.add('canvas-container');
 
   summaryHeader.remove();
   summary.remove();
   showResultsBtn.remove();
 
   let data = Product.products.map(product => product.clicks);
+
   new Chart(ctx, {
     type: 'bar',
     data: {
@@ -154,6 +157,8 @@ function showResults() {
       ],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: true,
       scales: {
         y: {
           beginAtZero: true,
