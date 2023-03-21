@@ -1,3 +1,4 @@
+// Global Variables
 const ctx = document.getElementById('myChart');
 const images = document.querySelectorAll('section img');
 const mainGrid = document.querySelector('main');
@@ -11,7 +12,7 @@ const canvasSection = document.querySelector('main section:nth-child(2)');
 
 const MAX_VOTES = 25;
 
-let votes = 0;
+let votes = getFromStorage('votes', 0);
 
 const productImageUrls = [
   './img/bag.jpg',
@@ -34,6 +35,37 @@ const productImageUrls = [
   './img/wine-glass.jpg',
 ];
 
+// Utility functions
+function updateStorage(key, value) {
+  if(typeof value === 'object') {
+    let valueString = JSON.stringify(value);
+    localStorage.setItem(key, valueString);
+    return;
+  }
+  localStorage.setItem(key, value);
+}
+
+function getFromStorage(key, fallback) {
+  let item = localStorage.getItem(key);
+  if(localStorage.getItem(key) === null) {
+    return fallback;
+  }
+  if(typeof fallback === 'object') {
+    return JSON.parse(item);
+  }
+  return item;
+}
+
+function updateStoredProduct(product, prop) {
+  let storedProducts = getFromStorage('products', null);
+  if(storedProducts) {
+    let productToUpdate = storedProducts.find(storedProduct => storedProduct.src === product.src);
+    productToUpdate[prop]++;
+    updateStorage('products', storedProducts);
+  }
+}
+
+// constructor
 function Product(name, src) {
   this.name = name;
   this.src = src;
@@ -56,12 +88,14 @@ function setProducts() {
       let productsString = JSON.stringify(products);
       localStorage.setItem('products', productsString);
       return products;
+
     })();
   } else {
     Product.products = JSON.parse(localStorage.getItem('products'));
   }
 }
 setProducts();
+
 
 // IIFE creates an array of names from array of urls
 Product.names = (function () {
@@ -73,7 +107,7 @@ Product.names = (function () {
   return names;
 })();
 
-function threeUniqueRandoms(min, max, numbers = []) {
+function threeNewUniqueRandoms(min, max, numbers = []) {
   let newNumbers = [];
   while (newNumbers.length < 3) {
     let number = Math.floor(Math.random() * (max - min) + min);
@@ -92,7 +126,7 @@ function placeRandomImages() {
     return productImageUrls.indexOf(imageSrc);
   });
 
-  let indexes = threeUniqueRandoms(0, productImageUrls.length, imageIndexes);
+  let indexes = threeNewUniqueRandoms(0, productImageUrls.length, imageIndexes);
 
   images.forEach((image, index) => {
     let i = indexes[index];
@@ -100,13 +134,15 @@ function placeRandomImages() {
     Product.products.forEach((product) => {
       if (productImageUrls[i] === product.src) {
         product.views++;
+        updateStoredProduct(product, 'views');
       }
     });
   });
 }
 
 function castVote(e) {
-  if (votes === MAX_VOTES) {
+  console.log(votes);
+  if (votes >= MAX_VOTES) {
     imageContainer.removeEventListener('click', castVote);
     return;
   }
@@ -115,44 +151,17 @@ function castVote(e) {
     return;
   }
   votes++;
+  updateStorage('votes', votes);
   let product = Product.products.find(
     (product) => e.target.getAttribute('src') === product.src
   );
   product.clicks++;
+  updateStoredProduct(product, 'clicks');
 
   placeRandomImages();
 }
 
-function showResults() {
-  if (votes < MAX_VOTES) {
-    alert(`${MAX_VOTES} votes must be cast before viewing results`);
-    return;
-  }
-
-  Product.products.forEach((product) => {
-    let result = document.createElement('li');
-    //hand plural clicks and view
-    result.innerText = `${product.name}:
-                        ${product.clicks} vote${product.clicks === 1 ? '' : 's'} 
-                        ${product.views} view${product.views === 1 ? '' : 's'}`;
-    resultsList.append(result);
-  });
-
-  mainGrid.style.gridTemplateColumns = '1fr 6fr';
-  mainGrid.style.gridTemplateRows = '1fr 2fr';
-
-  imageContainer.style.gridColumn = '1 / 3';
-  imageContainer.style.gridRow = '1 / 2';
-
-  canvasSection.style.gridColumn = '2 / 3';
-  canvasSection.style.gridRow = '2 / 3';
-
-  aside.classList.add('results');
-
-  summaryHeader.remove();
-  summary.remove();
-  showResultsBtn.remove();
-
+function showGraph() {
   let productClickData = Product.products.map((product) => product.clicks);
   let productViewData = Product.products.map((product) => product.views);
 
@@ -185,10 +194,48 @@ function showResults() {
   });
 }
 
+function showData() {
+  Product.products.forEach((product) => {
+    let result = document.createElement('li');
+    //hand plural clicks and view
+    result.innerText = `${product.name}:
+                        ${product.clicks} vote${product.clicks === 1 ? '' : 's'} 
+                        ${product.views} view${product.views === 1 ? '' : 's'}`;
+    resultsList.append(result);
+  });
+
+
+  // restyle grid to fit results and bar chart
+  mainGrid.style.gridTemplateColumns = '1fr 6fr';
+  mainGrid.style.gridTemplateRows = '1fr 2fr';
+
+  imageContainer.style.gridColumn = '1 / 3';
+  imageContainer.style.gridRow = '1 / 2';
+
+  canvasSection.style.gridColumn = '2 / 3';
+  canvasSection.style.gridRow = '2 / 3';
+
+  aside.classList.add('results');
+
+  //remove summary sections
+  summaryHeader.remove();
+  summary.remove();
+}
+
+function showResults() {
+  if (votes < MAX_VOTES) {
+    alert(`${MAX_VOTES} votes must be cast before viewing results`);
+    return;
+  }
+
+  showData();
+  showGraph();
+}
+
 // event listeners
 imageContainer.addEventListener('click', castVote);
 showResultsBtn.addEventListener('click', showResults);
 
-// entry point
+// entry point for program
 placeRandomImages();
 
