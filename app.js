@@ -1,18 +1,19 @@
 const ctx = document.getElementById('myChart');
-let images = document.querySelectorAll('section img');
-let mainGrid = document.querySelector('main');
-let imageContainer = document.querySelector('main section:first-of-type');
-let resultsList = document.querySelector('aside ul');
-let aside = document.querySelector('aside');
-let summary = document.querySelector('main section:last-of-type');
-let summaryHeader = document.querySelector('main section h2');
-let showResultsBtn = document.querySelector('button');
-let canvasSection = document.querySelector('main section:nth-child(2)');
-let canvasContainer = document.querySelector('main section:nth-of-type(2) div');
+const images = document.querySelectorAll('section img');
+const mainGrid = document.querySelector('main');
+const imageContainer = document.querySelector('main section:first-of-type');
+const resultsList = document.querySelector('aside ul');
+const aside = document.querySelector('aside');
+const summary = document.querySelector('main section:last-of-type');
+const summaryHeader = document.querySelector('main section h2');
+const showResultsBtn = document.querySelector('button');
+const canvasSection = document.querySelector('main section:nth-child(2)');
+
+const MAX_VOTES = 25;
 
 let votes = 0;
 
-let productImageUrls = [
+const productImageUrls = [
   './img/bag.jpg',
   './img/banana.jpg',
   './img/bathroom.jpg',
@@ -40,30 +41,39 @@ function Product(name, src) {
   this.clicks = 0;
 }
 
-// IIFE creates an array of products from array of urls
-Product.products = (function () {
-  let products = [];
-  productImageUrls.forEach((url) => {
-    let name = url.slice(6, -4);
-    let product = new Product(name, url);
-    products.push(product);
-  });
-  return products;
-})();
+function setProducts() {
+  if(!localStorage.getItem('products')) {
+    // IIFE creates an array of products from array of urls
+    Product.products = (function () {
+      let products = [];
+      productImageUrls.forEach((url) => {
+        // name of product is in the file path of the image
+        let name = url.slice(6, -4);
+        let product = new Product(name, url);
+        products.push(product);
+      });
+
+      let productsString = JSON.stringify(products);
+      localStorage.setItem('products', productsString);
+      return products;
+    })();
+  } else {
+    Product.products = JSON.parse(localStorage.getItem('products'));
+  }
+}
+setProducts();
 
 // IIFE creates an array of names from array of urls
 Product.names = (function () {
-  let products = [];
+  let names = [];
   productImageUrls.forEach((url) => {
     let name = url.slice(6, -4);
-    products.push(name);
+    names.push(name);
   });
-  return products;
+  return names;
 })();
 
-function threeUniqueRandoms(min, max, numbers) {
-  if (!numbers) numbers = [];
-
+function threeUniqueRandoms(min, max, numbers = []) {
   let newNumbers = [];
   while (newNumbers.length < 3) {
     let number = Math.floor(Math.random() * (max - min) + min);
@@ -96,38 +106,40 @@ function placeRandomImages() {
 }
 
 function castVote(e) {
-  // console.log(e.target.nodeName === 'IMG');
-  if (votes === 25) {
+  if (votes === MAX_VOTES) {
     imageContainer.removeEventListener('click', castVote);
     return;
   }
   if (e.target.nodeName !== 'IMG') {
     alert('Please Select an Image');
     return;
-  } else {
-    votes++;
-    let product = Product.products.find(
-      (product) => e.target.getAttribute('src') === product.src
-    );
-    product.clicks++;
   }
+  votes++;
+  let product = Product.products.find(
+    (product) => e.target.getAttribute('src') === product.src
+  );
+  product.clicks++;
+
   placeRandomImages();
 }
+
 function showResults() {
-  if (votes < 25) {
-    alert('25 votes must be cast before viewing results');
+  if (votes < MAX_VOTES) {
+    alert(`${MAX_VOTES} votes must be cast before viewing results`);
     return;
   }
+
   Product.products.forEach((product) => {
     let result = document.createElement('li');
-    result.innerText = `${product.name} :\n ${product.clicks} vote${
-      product.clicks === 1 ? '' : 's'
-    }\n ${product.views} view${product.views === 1 ? '' : 's'}`;
+    //hand plural clicks and view
+    result.innerText = `${product.name}:
+                        ${product.clicks} vote${product.clicks === 1 ? '' : 's'} 
+                        ${product.views} view${product.views === 1 ? '' : 's'}`;
     resultsList.append(result);
   });
 
   mainGrid.style.gridTemplateColumns = '1fr 6fr';
-  mainGrid.style.gridTemplateRows= '1fr 2fr';
+  mainGrid.style.gridTemplateRows = '1fr 2fr';
 
   imageContainer.style.gridColumn = '1 / 3';
   imageContainer.style.gridRow = '1 / 2';
@@ -136,13 +148,13 @@ function showResults() {
   canvasSection.style.gridRow = '2 / 3';
 
   aside.classList.add('results');
-  canvasContainer.classList.add('canvas-container');
 
   summaryHeader.remove();
   summary.remove();
   showResultsBtn.remove();
 
-  let data = Product.products.map(product => product.clicks);
+  let productClickData = Product.products.map((product) => product.clicks);
+  let productViewData = Product.products.map((product) => product.views);
 
   new Chart(ctx, {
     type: 'bar',
@@ -151,7 +163,12 @@ function showResults() {
       datasets: [
         {
           label: '# of Votes',
-          data: data,
+          data: productClickData,
+          borderWidth: 1,
+        },
+        {
+          label: '# of Views',
+          data: productViewData,
           borderWidth: 1,
         },
       ],
@@ -167,7 +184,11 @@ function showResults() {
     },
   });
 }
+
 // event listeners
 imageContainer.addEventListener('click', castVote);
 showResultsBtn.addEventListener('click', showResults);
+
+// entry point
 placeRandomImages();
+

@@ -35,12 +35,7 @@ main {
   align-self: center;
   margin-top: 25px;
 }
-.results {
-  display: flex;
-  grid-column: 1 / 2;
-  grid-row: 2 / 3;
-  overflow: scroll;
-}
+
 main aside ul {
   display: flex;
   flex-direction: column;
@@ -48,6 +43,8 @@ main aside ul {
   width: 90%;
   max-height: 500px;
   margin-top: 3em;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 800;
 }
 main section:first-of-type {
   display: flex;
@@ -82,6 +79,7 @@ main section:last-of-type {
 main section img {
   height: 300px;
   width: 300px;
+  cursor: pointer;
 }
 li:nth-child(2n) {
   background-color: mintcream;
@@ -100,9 +98,23 @@ footer {
 }
 canvas {
   display: none;
-  overflow: scroll;
+}
+button {
+  background-color: rgb(120, 27, 120);
+  color:rgb(210, 196, 0);
+  font-size: 1rem;
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+.results {
+  display: flex;
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
 }
 
+/* Media Queries */
 @media (max-width: 992px) {
   header {
     justify-content: center;
