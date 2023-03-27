@@ -65,6 +65,10 @@ function updateStoredProduct(product, prop) {
   }
 }
 
+function randomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min) + min);
+}
+
 // constructor
 function Product(name, src) {
   this.name = name;
@@ -94,8 +98,8 @@ function setProducts() {
     Product.products = JSON.parse(localStorage.getItem('products'));
   }
 }
-setProducts();
 
+setProducts();
 
 // IIFE creates an array of names from array of urls
 Product.names = (function () {
@@ -110,9 +114,9 @@ Product.names = (function () {
 function threeNewUniqueRandoms(min, max, numbers = []) {
   let newNumbers = [];
   while (newNumbers.length < 3) {
-    let number = Math.floor(Math.random() * (max - min) + min);
+    let number = randomNumber(min, max);
     while (numbers.includes(number)) {
-      number = Math.floor(Math.random() * (max - min) + min);
+      number = randomNumber(min, max);
     }
     if (!newNumbers.includes(number)) newNumbers.push(number);
   }
@@ -141,7 +145,6 @@ function placeRandomImages() {
 }
 
 function castVote(e) {
-  console.log(votes);
   if (votes >= MAX_VOTES) {
     imageContainer.removeEventListener('click', castVote);
     return;
